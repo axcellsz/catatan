@@ -1,4 +1,4 @@
-const ALLOWED_TYPES = ["REG","OPR","VPN","AXB","ATX","OTX","UJC","CRD"];
+const ALLOWED_TYPES = ["REG", "OPR", "VPN", "AXB", "ATX", "OTX", "UJC", "CRD"];
 
 function prefixForType(type) {
   switch (type) {
@@ -6,10 +6,10 @@ function prefixForType(type) {
     case "OPR": return "opr:";
     case "VPN": return "vpn:";
     case "AXB": return "axb:";
-    case "ATX": return "atx:";
-    case "OTX": return "otx:";
-    case "UJC": return "ujc:";
-    case "CRD": return "crd:";
+    case "ATX": return "atx:";  // pengeluaran: ATX
+    case "OTX": return "otx:";  // pengeluaran: OTX
+    case "UJC": return "ujc:";  // pengeluaran: UJC
+    case "CRD": return "crd:";  // pengeluaran: CRD
     default: throw new Error("Unknown type");
   }
 }
@@ -43,16 +43,16 @@ export default {
 
       const type = (payload.type || "").trim().toUpperCase();
       if (!ALLOWED_TYPES.includes(type)) {
-        return new Response("Jenis penjualan tidak valid", { status: 400 });
+        return new Response("Jenis penjualan/pengeluaran tidak valid", { status: 400 });
       }
 
       const id = crypto.randomUUID();
       const createdAt = new Date().toISOString();
-      const month = getMonthKeyFromISO(createdAt); // <-- bulan transaksi
+      const month = getMonthKeyFromISO(createdAt);
       const prefix = prefixForType(type);
       let record;
 
-      // REG / OPR / VPN
+      // ---- REG / OPR / VPN (penjualan biasa) ----
       if (type === "REG" || type === "OPR" || type === "VPN") {
         const jenisTrx = (payload.jenisTrx || "").trim();
         const hargaModal = Number(payload.hargaModal || 0);
@@ -72,15 +72,14 @@ export default {
           hargaJual,
           keuntungan,
           createdAt,
-          month, // <--
+          month,
         };
       }
 
-      // AXB
+      // ---- AXB (paket nomor) ----
       else if (type === "AXB") {
         const namaPengelola = (payload.namaPengelola || "").trim();
         const nomorPengelola = (payload.nomorPengelola || "").trim();
-
         const hargaPaket = Number(payload.hargaPaket || 0);
 
         if (!namaPengelola || !nomorPengelola || isNaN(hargaPaket)) {
@@ -122,7 +121,26 @@ export default {
           totalHargaNomor,
           keuntungan,
           createdAt,
-          month, // <--
+          month,
+        };
+      }
+
+      // ---- ATX / OTX / UJC / CRD (PENGELUARAN) ----
+      else if (type === "ATX" || type === "OTX" || type === "UJC" || type === "CRD") {
+        const keterangan = (payload.keterangan || "").trim();
+        const harga = Number(payload.harga || 0);
+
+        if (!keterangan || isNaN(harga)) {
+          return new Response("Data pengeluaran tidak lengkap", { status: 400 });
+        }
+
+        record = {
+          id,
+          type,
+          keterangan,
+          harga,
+          createdAt,
+          month,
         };
       }
 
@@ -157,17 +175,14 @@ export default {
       }
 
       const existingObj = JSON.parse(existing);
-
       const createdAt =
         existingObj.createdAt || new Date().toISOString();
-
-      // pakai month lama kalau ada; kalau tidak, hitung dari createdAt
       const month =
         existingObj.month || getMonthKeyFromISO(createdAt) || getMonthKeyFromDate(new Date());
 
       let record;
 
-      // REG / OPR / VPN
+      // ---- UPDATE REG / OPR / VPN ----
       if (type === "REG" || type === "OPR" || type === "VPN") {
         const jenisTrx = (payload.jenisTrx || "").trim();
         const hargaModal = Number(payload.hargaModal || 0);
@@ -191,7 +206,7 @@ export default {
         };
       }
 
-      // AXB
+      // ---- UPDATE AXB ----
       else if (type === "AXB") {
         const namaPengelola = (payload.namaPengelola || "").trim();
         const nomorPengelola = (payload.nomorPengelola || "").trim();
@@ -235,6 +250,25 @@ export default {
           hargaA5,
           totalHargaNomor,
           keuntungan,
+          createdAt,
+          month,
+        };
+      }
+
+      // ---- UPDATE PENGELUARAN ----
+      else if (type === "ATX" || type === "OTX" || type === "UJC" || type === "CRD") {
+        const keterangan = (payload.keterangan || "").trim();
+        const harga = Number(payload.harga || 0);
+
+        if (!keterangan || isNaN(harga)) {
+          return new Response("Data pengeluaran tidak lengkap", { status: 400 });
+        }
+
+        record = {
+          id,
+          type,
+          keterangan,
+          harga,
           createdAt,
           month,
         };
@@ -278,10 +312,9 @@ export default {
     if (request.method === "GET" && url.pathname === "/list") {
       const type = (url.searchParams.get("type") || "").toUpperCase();
       if (!ALLOWED_TYPES.includes(type)) {
-        return new Response("Jenis penjualan tidak valid", { status: 400 });
+        return new Response("Jenis tidak valid", { status: 400 });
       }
 
-      // month = "YYYY-MM"; kalau tidak ada → default bulan sekarang
       const monthParam = url.searchParams.get("month");
       const targetMonth =
         monthParam && /^\d{4}-\d{2}$/.test(monthParam)
@@ -298,24 +331,19 @@ export default {
         try {
           const obj = JSON.parse(value);
 
-          // fallback untuk data lama yg belum punya field month
           let itemMonth = obj.month;
           if (!itemMonth && obj.createdAt) {
             itemMonth = getMonthKeyFromISO(obj.createdAt);
           }
 
-          // kalau tidak bisa tentukan bulan, tetap disimpan
-          if (itemMonth && itemMonth !== targetMonth) {
-            continue; // skip bulan lain
-          }
+          if (itemMonth && itemMonth !== targetMonth) continue;
 
           items.push(obj);
         } catch {
-          // skip kalau parse gagal
+          // skip parse error
         }
       }
 
-      // urutkan dari terbaru ke lama
       items.sort((a, b) => {
         if (!a.createdAt || !b.createdAt) return 0;
         return a.createdAt < b.createdAt ? 1 : -1;
