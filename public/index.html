@@ -34,7 +34,7 @@
       padding: 20px;
       border-radius: 12px;
       box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
-      max-width: 480px;
+      max-width: 520px;
       width: 100%;
       max-height: 90vh;
       display: flex;
@@ -65,6 +65,11 @@
       font-size: 0.95rem;
       margin-bottom: 10px;
     }
+    input:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 1px #2563eb33;
+    }
     button {
       padding: 8px 10px;
       border-radius: 8px;
@@ -74,6 +79,10 @@
       font-weight: 600;
       background: #2563eb;
       color: #fff;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:focus {
+      outline: none;
     }
     button:disabled {
       opacity: 0.7;
@@ -100,7 +109,7 @@
       margin-bottom: 4px;
     }
     .entries-list {
-      max-height: 220px;
+      max-height: 260px;
       overflow-y: auto;
     }
     .entry {
@@ -109,6 +118,20 @@
     }
     .entry:last-child {
       border-bottom: none;
+    }
+    .entry-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 4px;
+    }
+    .entry-main {
+      flex: 1;
+    }
+    .entry-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
     .entry-name {
       font-weight: 600;
@@ -126,8 +149,26 @@
       font-weight: 600;
       color: #2563eb;
     }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: #e5f0ff;
+      font-size: 0.75rem;
+      margin-top: 2px;
+    }
 
-    /* Footer fixed */
+    .btn-small {
+      font-size: 0.75rem;
+      padding: 4px 6px;
+      border-radius: 999px;
+      background: #4b5563;
+    }
+    .btn-small.delete {
+      background: #b91c1c;
+    }
+
     .footer {
       position: fixed;
       bottom: 0;
@@ -140,7 +181,7 @@
       z-index: 100;
     }
     .footer-inner {
-      max-width: 480px;
+      max-width: 520px;
       margin: 0 auto;
       display: flex;
       align-items: center;
@@ -172,7 +213,7 @@
       border-radius: 999px;
       font-size: 1rem;
       min-width: 40px;
-      display: none; /* default tidak muncul, sampai tipe dipilih */
+      display: none;
     }
     .add-btn.visible {
       display: inline-flex;
@@ -189,6 +230,18 @@
     .hidden {
       display: none !important;
     }
+
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin: 6px 0 2px;
+      color: #374151;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 10px;
+    }
   </style>
 </head>
 <body>
@@ -197,22 +250,100 @@
       <div class="card">
         <h1>Aplikasi Penjualan 🐶</h1>
         <div class="subtitle">
-          Pilih jenis penjualan di footer, lalu tekan tombol <strong>+</strong> untuk menambah data.
+          Pilih jenis penjualan di footer, lalu tekan tombol <strong>+</strong> untuk menambah atau edit data.
         </div>
 
         <div id="current-type" class="current-type-label hidden"></div>
 
-        <form id="user-form" class="hidden">
+        <form id="data-form" class="hidden">
           <input type="hidden" id="type" name="type" />
-          <div>
-            <label for="name">Nama</label>
-            <input id="name" name="name" type="text" required />
+          <input type="hidden" id="editingId" name="editingId" />
+
+          <!-- REG / OPR / VPN -->
+          <div id="form-common" class="hidden">
+            <div class="section-title">Data Transaksi (REG / OPR / VPN)</div>
+            <div>
+              <label for="jenisTrx">Jenis Trx</label>
+              <input id="jenisTrx" name="jenisTrx" type="text" required />
+            </div>
+            <div class="grid-2">
+              <div>
+                <label for="hargaModal">Harga modal</label>
+                <input id="hargaModal" name="hargaModal" type="number" inputmode="decimal" required />
+              </div>
+              <div>
+                <label for="hargaJual">Harga jual</label>
+                <input id="hargaJual" name="hargaJual" type="number" inputmode="decimal" required />
+              </div>
+            </div>
           </div>
-          <div>
-            <label for="phone">Nomor HP</label>
-            <input id="phone" name="phone" type="tel" required />
+
+          <!-- AXB -->
+          <div id="form-axb" class="hidden">
+            <div class="section-title">Data AXB</div>
+            <div>
+              <label for="namaPengelola">Nama pengelola</label>
+              <input id="namaPengelola" name="namaPengelola" type="text" />
+            </div>
+            <div>
+              <label for="nomorPengelola">Nomor pengelola</label>
+              <input id="nomorPengelola" name="nomorPengelola" type="text" />
+            </div>
+            <div>
+              <label for="hargaPaket">Harga paket</label>
+              <input id="hargaPaket" name="hargaPaket" type="number" inputmode="decimal" />
+            </div>
+
+            <div class="section-title">Nomor & Harga A1 - A5</div>
+            <div class="grid-2">
+              <div>
+                <label for="nomorA1">Nomor A1</label>
+                <input id="nomorA1" name="nomorA1" type="text" />
+              </div>
+              <div>
+                <label for="hargaA1">Harga A1</label>
+                <input id="hargaA1" name="hargaA1" type="number" inputmode="decimal" />
+              </div>
+
+              <div>
+                <label for="nomorA2">Nomor A2</label>
+                <input id="nomorA2" name="nomorA2" type="text" />
+              </div>
+              <div>
+                <label for="hargaA2">Harga A2</label>
+                <input id="hargaA2" name="hargaA2" type="number" inputmode="decimal" />
+              </div>
+
+              <div>
+                <label for="nomorA3">Nomor A3</label>
+                <input id="nomorA3" name="nomorA3" type="text" />
+              </div>
+              <div>
+                <label for="hargaA3">Harga A3</label>
+                <input id="hargaA3" name="hargaA3" type="number" inputmode="decimal" />
+              </div>
+
+              <div>
+                <label for="nomorA4">Nomor A4</label>
+                <input id="nomorA4" name="nomorA4" type="text" />
+              </div>
+              <div>
+                <label for="hargaA4">Harga A4</label>
+                <input id="hargaA4" name="hargaA4" type="number" inputmode="decimal" />
+              </div>
+
+              <div>
+                <label for="nomorA5">Nomor A5</label>
+                <input id="nomorA5" name="nomorA5" type="text" />
+              </div>
+              <div>
+                <label for="hargaA5">Harga A5</label>
+                <input id="hargaA5" name="hargaA5" type="number" inputmode="decimal" />
+              </div>
+            </div>
           </div>
-          <button type="submit">Simpan</button>
+
+          <button type="submit" id="submitBtn">Simpan</button>
           <div id="status"></div>
         </form>
 
@@ -243,18 +374,44 @@
   </div>
 
   <script>
-    const form = document.getElementById("user-form");
+    const form = document.getElementById("data-form");
     const statusEl = document.getElementById("status");
-    const button = form.querySelector("button");
+    const submitBtn = document.getElementById("submitBtn");
     const entriesEl = document.getElementById("entries");
     const entriesCountEl = document.getElementById("entries-count");
     const entriesTitleEl = document.getElementById("entries-title");
     const typeInput = document.getElementById("type");
+    const editingIdInput = document.getElementById("editingId");
     const currentTypeLabel = document.getElementById("current-type");
     const addBtn = document.getElementById("add-btn");
     const typeButtons = Array.from(document.querySelectorAll(".type-btn"));
 
+    const formCommon = document.getElementById("form-common");
+    const formAXB = document.getElementById("form-axb");
+
     let selectedType = null;
+
+    function clearForm() {
+      form.reset();
+      editingIdInput.value = "";
+      statusEl.textContent = "";
+    }
+
+    function updateFormVisibility() {
+      if (!selectedType) {
+        form.classList.add("hidden");
+        return;
+      }
+      form.classList.remove("hidden");
+      if (selectedType === "AXB") {
+        formCommon.classList.add("hidden");
+        formAXB.classList.remove("hidden");
+      } else {
+        formCommon.classList.remove("hidden");
+        formAXB.classList.add("hidden");
+      }
+      typeInput.value = selectedType;
+    }
 
     function updateFooterUI() {
       typeButtons.forEach(btn => {
@@ -274,8 +431,8 @@
       }
     }
 
-    async function loadUsers(type) {
-      if (!type) {
+    async function loadItems() {
+      if (!selectedType) {
         entriesEl.innerHTML = "<em>Pilih jenis penjualan di footer.</em>";
         entriesCountEl.textContent = "";
         return;
@@ -285,16 +442,15 @@
       entriesCountEl.textContent = "";
 
       try {
-        const res = await fetch("/list");
+        const res = await fetch("/list?type=" + encodeURIComponent(selectedType));
         if (!res.ok) {
           throw new Error("Gagal memuat data (" + res.status + ")");
         }
         const data = await res.json();
-        const allItems = data.items || [];
-        const items = allItems.filter(item => item.type === type);
+        const items = data.items || [];
 
         if (items.length === 0) {
-          entriesEl.innerHTML = "<em>Belum ada data untuk " + type + ".</em>";
+          entriesEl.innerHTML = "<em>Belum ada data untuk " + selectedType + ".</em>";
           entriesCountEl.textContent = "";
           return;
         }
@@ -305,12 +461,53 @@
         for (const item of items) {
           const div = document.createElement("div");
           div.className = "entry";
-          div.innerHTML = `
-            <div class="entry-name">${item.name || "(tanpa nama)"}</div>
-            <div class="entry-phone">${item.phone || "-"}</div>
+
+          let mainHtml = "";
+          if (item.type === "REG" || item.type === "OPR" || item.type === "VPN") {
+            mainHtml = `
+              <div class="entry-name">${item.jenisTrx || "-"}</div>
+              <div class="entry-phone">
+                Modal: ${item.hargaModal ?? 0} | Jual: ${item.hargaJual ?? 0}
+              </div>
+              <div class="tag">Keuntungan: ${item.keuntungan ?? 0}</div>
+            `;
+          } else if (item.type === "AXB") {
+            const summary = [];
+            if (item.nomorA1) summary.push("A1");
+            if (item.nomorA2) summary.push("A2");
+            if (item.nomorA3) summary.push("A3");
+            if (item.nomorA4) summary.push("A4");
+            if (item.nomorA5) summary.push("A5");
+            mainHtml = `
+              <div class="entry-name">${item.namaPengelola || "(tanpa nama)"}</div>
+              <div class="entry-phone">
+                Paket: ${item.hargaPaket ?? 0} | Nomor: ${summary.join(", ") || "-"}
+              </div>
+            `;
+          }
+
+          const timeHtml = `
             <div class="entry-time">${item.createdAt || ""}</div>
             <div class="entry-type">${item.type || ""}</div>
           `;
+
+          const actionsHtml = `
+            <button class="btn-small edit" data-id="${item.id}">Edit</button>
+            <button class="btn-small delete" data-id="${item.id}">Hapus</button>
+          `;
+
+          div.innerHTML = `
+            <div class="entry-top">
+              <div class="entry-main">
+                ${mainHtml}
+                ${timeHtml}
+              </div>
+              <div class="entry-actions">
+                ${actionsHtml}
+              </div>
+            </div>
+          `;
+
           entriesEl.appendChild(div);
         }
       } catch (err) {
@@ -319,52 +516,155 @@
       }
     }
 
-    // Klik jenis penjualan di footer
+    // Pilih jenis penjualan
     typeButtons.forEach(btn => {
       btn.addEventListener("click", async () => {
         const t = btn.getAttribute("data-type");
         selectedType = t;
+        clearForm();
         updateFooterUI();
-        await loadUsers(selectedType);
+        updateFormVisibility();
+        await loadItems();
       });
     });
 
-    // Klik tombol + untuk menambah data
+    // Tombol + -> buka form add (mode tambah)
     addBtn.addEventListener("click", () => {
       if (!selectedType) return;
-      form.classList.remove("hidden");
-      typeInput.value = selectedType;
-      // fokus ke input nama
-      document.getElementById("name").focus();
+      clearForm();
+      updateFormVisibility();
+      // fokus ke field pertama sesuai jenis
+      if (selectedType === "AXB") {
+        document.getElementById("namaPengelola").focus();
+      } else {
+        document.getElementById("jenisTrx").focus();
+      }
     });
 
+    // Delegasi klik untuk Edit / Hapus
+    entriesEl.addEventListener("click", async (e) => {
+      const btn = e.target;
+      if (!(btn instanceof HTMLElement)) return;
+
+      const id = btn.getAttribute("data-id");
+      if (!id) return;
+
+      if (btn.classList.contains("edit")) {
+        // mode edit: ambil semua data via /list (sudah dimuat) -> cari item di JS
+        // agar simple, kita refetch 1x
+        try {
+          const res = await fetch("/list?type=" + encodeURIComponent(selectedType));
+          if (!res.ok) throw new Error("Gagal ambil data");
+          const data = await res.json();
+          const items = data.items || [];
+          const item = items.find((x) => x.id === id);
+          if (!item) {
+            alert("Data tidak ditemukan");
+            return;
+          }
+
+          editingIdInput.value = item.id;
+          typeInput.value = item.type;
+          selectedType = item.type;
+          updateFooterUI();
+          updateFormVisibility();
+
+          if (item.type === "REG" || item.type === "OPR" || item.type === "VPN") {
+            document.getElementById("jenisTrx").value = item.jenisTrx || "";
+            document.getElementById("hargaModal").value = item.hargaModal ?? "";
+            document.getElementById("hargaJual").value = item.hargaJual ?? "";
+          } else if (item.type === "AXB") {
+            document.getElementById("namaPengelola").value = item.namaPengelola || "";
+            document.getElementById("nomorPengelola").value = item.nomorPengelola || "";
+            document.getElementById("hargaPaket").value = item.hargaPaket ?? "";
+
+            document.getElementById("nomorA1").value = item.nomorA1 || "";
+            document.getElementById("hargaA1").value = item.hargaA1 ?? "";
+            document.getElementById("nomorA2").value = item.nomorA2 || "";
+            document.getElementById("hargaA2").value = item.hargaA2 ?? "";
+            document.getElementById("nomorA3").value = item.nomorA3 || "";
+            document.getElementById("hargaA3").value = item.hargaA3 ?? "";
+            document.getElementById("nomorA4").value = item.nomorA4 || "";
+            document.getElementById("hargaA4").value = item.hargaA4 ?? "";
+            document.getElementById("nomorA5").value = item.nomorA5 || "";
+            document.getElementById("hargaA5").value = item.hargaA5 ?? "";
+          }
+
+          form.classList.remove("hidden");
+          statusEl.textContent = "Mode edit data " + item.type + " (ID: " + item.id + ")";
+        } catch (err) {
+          alert("Gagal memuat data untuk edit: " + err.message);
+        }
+      }
+
+      if (btn.classList.contains("delete")) {
+        if (!confirm("Yakin ingin menghapus data ini?")) return;
+
+        try {
+          const res = await fetch("/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, type: selectedType }),
+          });
+          if (!res.ok) {
+            const txt = await res.text();
+            throw new Error(txt || "Gagal hapus");
+          }
+          await loadItems();
+        } catch (err) {
+          alert("Gagal menghapus: " + err.message);
+        }
+      }
+    });
+
+    // Submit form: tambah atau update
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const name = document.getElementById("name").value.trim();
-      const phone = document.getElementById("phone").value.trim();
       const type = typeInput.value;
-
       if (!type) {
         statusEl.textContent = "Pilih jenis penjualan dulu di footer.";
         return;
       }
 
-      if (!name || !phone) {
-        statusEl.textContent = "Nama dan nomor HP wajib diisi.";
-        return;
+      const editingId = editingIdInput.value || null;
+      const payload = { type };
+
+      if (type === "REG" || type === "OPR" || type === "VPN") {
+        payload.jenisTrx = document.getElementById("jenisTrx").value.trim();
+        payload.hargaModal = document.getElementById("hargaModal").value;
+        payload.hargaJual = document.getElementById("hargaJual").value;
+      } else if (type === "AXB") {
+        payload.namaPengelola = document.getElementById("namaPengelola").value.trim();
+        payload.nomorPengelola = document.getElementById("nomorPengelola").value.trim();
+        payload.hargaPaket = document.getElementById("hargaPaket").value;
+
+        payload.nomorA1 = document.getElementById("nomorA1").value.trim();
+        payload.hargaA1 = document.getElementById("hargaA1").value;
+        payload.nomorA2 = document.getElementById("nomorA2").value.trim();
+        payload.hargaA2 = document.getElementById("hargaA2").value;
+        payload.nomorA3 = document.getElementById("nomorA3").value.trim();
+        payload.hargaA3 = document.getElementById("hargaA3").value;
+        payload.nomorA4 = document.getElementById("nomorA4").value.trim();
+        payload.hargaA4 = document.getElementById("hargaA4").value;
+        payload.nomorA5 = document.getElementById("nomorA5").value.trim();
+        payload.hargaA5 = document.getElementById("hargaA5").value;
+      }
+
+      let endpoint = "/submit";
+      if (editingId) {
+        endpoint = "/update";
+        payload.id = editingId;
       }
 
       statusEl.textContent = "Menyimpan...";
-      button.disabled = true;
+      submitBtn.disabled = true;
 
       try {
-        const res = await fetch("/submit", {
+        const res = await fetch(endpoint, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ name, phone, type }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
         });
 
         if (!res.ok) {
@@ -372,16 +672,20 @@
           throw new Error(text || "Server error");
         }
 
-        const data = await res.json();
-        statusEl.textContent = "Tersimpan! ID: " + data.id;
-        form.reset();
-        // tetap set type hidden sesuai selectedType
-        typeInput.value = selectedType;
-        await loadUsers(selectedType);
+        const data = await res.json().catch(() => ({}));
+
+        if (editingId) {
+          statusEl.textContent = "Data berhasil diupdate.";
+        } else {
+          statusEl.textContent = "Tersimpan! ID: " + (data.id || "");
+        }
+
+        editingIdInput.value = "";
+        await loadItems();
       } catch (err) {
         statusEl.textContent = "Gagal menyimpan: " + err.message;
       } finally {
-        button.disabled = false;
+        submitBtn.disabled = false;
       }
     });
   </script>
