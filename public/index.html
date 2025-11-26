@@ -42,12 +42,6 @@
       font-size: 1.4rem;
       text-align: center;
     }
-    .subtitle {
-      text-align: center;
-      font-size: 0.85rem;
-      margin-bottom: 16px;
-      color: #555;
-    }
     label {
       display: block;
       font-size: 0.85rem;
@@ -153,7 +147,7 @@
 
     .footer {
       position: fixed;
-      bottom: 8px; /* kasih jarak dari bawah layar */
+      bottom: 8px; /* jarak dari bawah layar */
       left: 0;
       right: 0;
       background: #111827;
@@ -390,7 +384,13 @@
 
     let selectedType = null;
 
-    // === FORMAT WAKTU: Kamis / 27 Nov 2025 / 19:00 ===
+    // FORMAT ANGKA (150.000, 1.234.567, dst)
+    function formatNumber(n) {
+      const num = Number(n) || 0;
+      return num.toLocaleString("id-ID");
+    }
+
+    // FORMAT WAKTU: Kamis / 27 Nov 2025 / 19:00
     function formatDate(iso) {
       if (!iso) return "";
       const d = new Date(iso);
@@ -442,14 +442,78 @@
       } else {
         addBtn.classList.remove("visible");
         currentTypeLabel.classList.add("hidden");
-        entriesTitleEl.textContent = "Data tersimpan";
+        entriesTitleEl.textContent = "Ringkasan penjualan";
       }
+    }
+
+    // === RINGKASAN SEMUA TRANSAKSI (awal halaman) ===
+    async function loadSummary() {
+      const TYPES = ["REG", "OPR", "VPN", "AXB"];
+      entriesTitleEl.textContent = "Ringkasan penjualan";
+      entriesEl.innerHTML = "<em>Memuat ringkasan...</em>";
+      entriesCountEl.textContent = "";
+
+      let overallModal = 0;
+      let overallKeuntungan = 0;
+      const blocks = [];
+
+      for (const t of TYPES) {
+        try {
+          const res = await fetch("/list?type=" + encodeURIComponent(t));
+          if (!res.ok) throw new Error("status " + res.status);
+          const data = await res.json();
+          const items = data.items || [];
+
+          let modalTotal = 0;
+          let keuntunganTotal = 0;
+
+          for (const item of items) {
+            if (t === "REG" || t === "OPR" || t === "VPN") {
+              modalTotal += Number(item.hargaModal || 0);
+            } else if (t === "AXB") {
+              modalTotal += Number(item.hargaPaket || 0);
+            }
+            keuntunganTotal += Number(item.keuntungan || 0);
+          }
+
+          overallModal += modalTotal;
+          overallKeuntungan += keuntunganTotal;
+
+          blocks.push(`
+            <div class="entry">
+              <div class="entry-name">${t}</div>
+              <div>Jumlah transaksi: ${items.length}</div>
+              <div>Modal total: ${formatNumber(modalTotal)}</div>
+              <div>Keuntungan total: ${formatNumber(keuntunganTotal)}</div>
+            </div>
+          `);
+        } catch (err) {
+          blocks.push(`
+            <div class="entry">
+              <div class="entry-name">${t}</div>
+              <div><em>Gagal memuat data: ${err.message}</em></div>
+            </div>
+          `);
+        }
+      }
+
+      blocks.push(`
+        <hr style="margin:8px 0;border:none;border-top:1px solid #eee;">
+        <div class="entry">
+          <div class="entry-name">TOTAL</div>
+          <div>Total modal: ${formatNumber(overallModal)}</div>
+          <div>Total keuntungan: ${formatNumber(overallKeuntungan)}</div>
+        </div>
+      `);
+
+      entriesEl.innerHTML = blocks.join("");
+      entriesCountEl.textContent = "";
     }
 
     async function loadItems() {
       if (!selectedType) {
-        entriesEl.innerHTML = "<em>Pilih jenis penjualan di footer.</em>";
-        entriesCountEl.textContent = "";
+        // kalau tidak ada type, tampilkan ringkasan saja
+        await loadSummary();
         return;
       }
 
@@ -482,24 +546,24 @@
             mainHtml = `
               <div class="entry-name">${item.jenisTrx || "-"}</div>
               <div class="entry-phone">
-                Modal: ${item.hargaModal ?? 0} | Jual: ${item.hargaJual ?? 0}
+                Modal: ${formatNumber(item.hargaModal ?? 0)} | Jual: ${formatNumber(item.hargaJual ?? 0)}
               </div>
-              <div class="tag">Keuntungan: ${item.keuntungan ?? 0}</div>
+              <div class="tag">Keuntungan: ${formatNumber(item.keuntungan ?? 0)}</div>
             `;
           } else if (item.type === "AXB") {
             mainHtml = `
               <div class="entry-name">${item.namaPengelola || "(tanpa nama)"}</div>
               <div class="entry-phone">
-                Paket: ${item.hargaPaket ?? 0}
+                Paket: ${formatNumber(item.hargaPaket ?? 0)}
               </div>
               <div class="entry-phone">
-                A1: ${item.nomorA1 || "-"} | Harga: ${item.hargaA1 ?? 0}<br>
-                A2: ${item.nomorA2 || "-"} | Harga: ${item.hargaA2 ?? 0}<br>
-                A3: ${item.nomorA3 || "-"} | Harga: ${item.hargaA3 ?? 0}<br>
-                A4: ${item.nomorA4 || "-"} | Harga: ${item.hargaA4 ?? 0}<br>
-                A5: ${item.nomorA5 || "-"} | Harga: ${item.hargaA5 ?? 0}
+                A1: ${item.nomorA1 || "-"} | Harga: ${formatNumber(item.hargaA1 ?? 0)}<br>
+                A2: ${item.nomorA2 || "-"} | Harga: ${formatNumber(item.hargaA2 ?? 0)}<br>
+                A3: ${item.nomorA3 || "-"} | Harga: ${formatNumber(item.hargaA3 ?? 0)}<br>
+                A4: ${item.nomorA4 || "-"} | Harga: ${formatNumber(item.hargaA4 ?? 0)}<br>
+                A5: ${item.nomorA5 || "-"} | Harga: ${formatNumber(item.hargaA5 ?? 0)}
               </div>
-              <div class="tag">Keuntungan: ${item.keuntungan ?? 0}</div>
+              <div class="tag">Keuntungan: ${formatNumber(item.keuntungan ?? 0)}</div>
             `;
           }
 
@@ -704,6 +768,10 @@
         submitBtn.disabled = false;
       }
     });
+
+    // === INIT: saat halaman pertama dibuka ===
+    updateFooterUI();
+    loadSummary();
   </script>
 </body>
 </html>
