@@ -677,21 +677,21 @@
               <div class="tag">Keuntungan: ${formatNumber(item.keuntungan ?? 0)}</div>
             `;
           } else if (item.type === "AXB") {
-            mainHtml = `
-              <div class="entry-name">${item.namaPengelola || "(tanpa nama)"}</div>
-              <div class="entry-phone">
-                Paket: ${formatNumber(item.hargaPaket ?? 0)}
-              </div>
-              <div class="entry-phone">
-                1. ${item.nomorA1 || "-"} | Harga: ${formatNumber(item.hargaA1 ?? 0)}<br>
-                2. ${item.nomorA2 || "-"} | Harga: ${formatNumber(item.hargaA2 ?? 0)}<br>
-                3. ${item.nomorA3 || "-"} | Harga: ${formatNumber(item.hargaA3 ?? 0)}<br>
-                4. ${item.nomorA4 || "-"} | Harga: ${formatNumber(item.hargaA4 ?? 0)}<br>
-                5. ${item.nomorA5 || "-"} | Harga: ${formatNumber(item.hargaA5 ?? 0)}
-              </div>
-              <div class="tag">Keuntungan: ${formatNumber(item.keuntungan ?? 0)}</div>
-            `;
-          }
+  mainHtml = `
+    <div class="entry-name">${item.namaPengelola || "(tanpa nama)"}</div>
+    <div class="entry-phone">Paket: ${formatNumber(item.hargaPaket ?? 0)}</div>
+
+    <table style="width:100%; font-size:0.82rem; margin-top:6px;">
+      <tr><td>1. ${item.nomorA1 || "-"}</td><td style="text-align:right;">${formatNumber(item.hargaA1 ?? 0)}</td></tr>
+      <tr><td>2. ${item.nomorA2 || "-"}</td><td style="text-align:right;">${formatNumber(item.hargaA2 ?? 0)}</td></tr>
+      <tr><td>3. ${item.nomorA3 || "-"}</td><td style="text-align:right;">${formatNumber(item.hargaA3 ?? 0)}</td></tr>
+      <tr><td>4. ${item.nomorA4 || "-"}</td><td style="text-align:right;">${formatNumber(item.hargaA4 ?? 0)}</td></tr>
+      <tr><td>5. ${item.nomorA5 || "-"}</td><td style="text-align:right;">${formatNumber(item.hargaA5 ?? 0)}</td></tr>
+    </table>
+
+    <div class="tag">Keuntungan: ${formatNumber(item.keuntungan ?? 0)}</div>
+  `;
+}
 
           const timeHtml = `
             <div class="entry-time">${formatDate(item.createdAt)}</div>
