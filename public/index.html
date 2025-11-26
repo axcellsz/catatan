@@ -255,6 +255,7 @@
 
         <div id="current-type" class="current-type-label hidden"></div>
 
+        <!-- FORM INPUT (disembunyikan sampai + / Edit ditekan) -->
         <form id="data-form" class="hidden">
           <input type="hidden" id="type" name="type" />
           <input type="hidden" id="editingId" name="editingId" />
@@ -347,6 +348,7 @@
           <div id="status"></div>
         </form>
 
+        <!-- LIST DATA -->
         <div class="entries">
           <div class="entries-header">
             <span id="entries-title">Data tersimpan</span>
@@ -397,12 +399,10 @@
       statusEl.textContent = "";
     }
 
-    function updateFormVisibility() {
-      if (!selectedType) {
-        form.classList.add("hidden");
-        return;
-      }
-      form.classList.remove("hidden");
+    // Atur layout form berdasarkan jenis (REG/OPR/VPN vs AXB)
+    function configureFormSections() {
+      if (!selectedType) return;
+      typeInput.value = selectedType;
       if (selectedType === "AXB") {
         formCommon.classList.add("hidden");
         formAXB.classList.remove("hidden");
@@ -410,7 +410,6 @@
         formCommon.classList.remove("hidden");
         formAXB.classList.add("hidden");
       }
-      typeInput.value = selectedType;
     }
 
     function updateFooterUI() {
@@ -516,24 +515,27 @@
       }
     }
 
-    // Pilih jenis penjualan
+    // Klik jenis penjualan di footer:
+    // tampilkan data + tombol + (form tetap disembunyikan)
     typeButtons.forEach(btn => {
       btn.addEventListener("click", async () => {
         const t = btn.getAttribute("data-type");
         selectedType = t;
         clearForm();
+        form.classList.add("hidden");   // form disembunyikan
+        configureFormSections();
         updateFooterUI();
-        updateFormVisibility();
         await loadItems();
       });
     });
 
-    // Tombol + -> buka form add (mode tambah)
+    // Tombol + -> buka form (mode tambah)
     addBtn.addEventListener("click", () => {
       if (!selectedType) return;
       clearForm();
-      updateFormVisibility();
-      // fokus ke field pertama sesuai jenis
+      configureFormSections();
+      form.classList.remove("hidden");  // form baru muncul di sini
+
       if (selectedType === "AXB") {
         document.getElementById("namaPengelola").focus();
       } else {
@@ -541,7 +543,7 @@
       }
     });
 
-    // Delegasi klik untuk Edit / Hapus
+    // Klik Edit / Hapus pada list
     entriesEl.addEventListener("click", async (e) => {
       const btn = e.target;
       if (!(btn instanceof HTMLElement)) return;
@@ -549,9 +551,8 @@
       const id = btn.getAttribute("data-id");
       if (!id) return;
 
+      // Edit
       if (btn.classList.contains("edit")) {
-        // mode edit: ambil semua data via /list (sudah dimuat) -> cari item di JS
-        // agar simple, kita refetch 1x
         try {
           const res = await fetch("/list?type=" + encodeURIComponent(selectedType));
           if (!res.ok) throw new Error("Gagal ambil data");
@@ -564,10 +565,10 @@
           }
 
           editingIdInput.value = item.id;
-          typeInput.value = item.type;
           selectedType = item.type;
+          typeInput.value = item.type;
+          configureFormSections();
           updateFooterUI();
-          updateFormVisibility();
 
           if (item.type === "REG" || item.type === "OPR" || item.type === "VPN") {
             document.getElementById("jenisTrx").value = item.jenisTrx || "";
@@ -590,13 +591,14 @@
             document.getElementById("hargaA5").value = item.hargaA5 ?? "";
           }
 
-          form.classList.remove("hidden");
+          form.classList.remove("hidden"); // form muncul di mode edit
           statusEl.textContent = "Mode edit data " + item.type + " (ID: " + item.id + ")";
         } catch (err) {
           alert("Gagal memuat data untuk edit: " + err.message);
         }
       }
 
+      // Hapus
       if (btn.classList.contains("delete")) {
         if (!confirm("Yakin ingin menghapus data ini?")) return;
 
@@ -617,7 +619,7 @@
       }
     });
 
-    // Submit form: tambah atau update
+    // Submit form (tambah / update)
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
