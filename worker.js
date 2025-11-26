@@ -6,11 +6,15 @@ function prefixForType(type) {
     case "OPR": return "opr:";
     case "VPN": return "vpn:";
     case "AXB": return "axb:";
-    case "ATX": return "atx:";  // pengeluaran: ATX
-    case "OTX": return "otx:";  // pengeluaran: OTX
-    case "UJC": return "ujc:";  // pengeluaran: UJC
-    case "CRD": return "crd:";  // pengeluaran: CRD
-    default: throw new Error("Unknown type");
+
+    // PENGELUARAN
+    case "ATX": return "atx:";
+    case "OTX": return "otx:";
+    case "UJC": return "ujc:";
+    case "CRD": return "crd:";
+
+    default:
+      throw new Error("Unknown type");
   }
 }
 
