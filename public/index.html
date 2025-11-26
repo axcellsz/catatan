@@ -19,7 +19,7 @@
       padding: 24px;
       border-radius: 12px;
       box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
-      max-width: 400px;
+      max-width: 480px;
       width: 100%;
     }
     h1 {
@@ -62,6 +62,32 @@
       font-size: 0.9rem;
       text-align: center;
     }
+    .entries {
+      margin-top: 20px;
+      border-top: 1px solid #eee;
+      padding-top: 12px;
+      max-height: 250px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+    }
+    .entry {
+      padding: 6px 0;
+      border-bottom: 1px dashed #eee;
+    }
+    .entry:last-child {
+      border-bottom: none;
+    }
+    .entry-name {
+      font-weight: 600;
+    }
+    .entry-phone {
+      font-family: monospace;
+      font-size: 0.85rem;
+    }
+    .entry-time {
+      font-size: 0.75rem;
+      color: #666;
+    }
   </style>
 </head>
 <body>
@@ -79,12 +105,51 @@
       <button type="submit">Simpan ke KV</button>
       <div id="status"></div>
     </form>
+
+    <div class="entries">
+      <strong>Data tersimpan:</strong>
+      <div id="entries">
+        <em>Memuat data...</em>
+      </div>
+    </div>
   </div>
 
   <script>
     const form = document.getElementById("user-form");
     const statusEl = document.getElementById("status");
     const button = form.querySelector("button");
+    const entriesEl = document.getElementById("entries");
+
+    async function loadUsers() {
+      entriesEl.innerHTML = "<em>Memuat data...</em>";
+      try {
+        const res = await fetch("/list");
+        if (!res.ok) {
+          throw new Error("Gagal memuat data (" + res.status + ")");
+        }
+        const data = await res.json();
+        const items = data.items || [];
+
+        if (items.length === 0) {
+          entriesEl.innerHTML = "<em>Belum ada data.</em>";
+          return;
+        }
+
+        entriesEl.innerHTML = "";
+        for (const item of items) {
+          const div = document.createElement("div");
+          div.className = "entry";
+          div.innerHTML = `
+            <div class="entry-name">${item.name || "(tanpa nama)"}</div>
+            <div class="entry-phone">${item.phone || "-"}</div>
+            <div class="entry-time">${item.createdAt || ""}</div>
+          `;
+          entriesEl.appendChild(div);
+        }
+      } catch (err) {
+        entriesEl.innerHTML = "<em>Gagal memuat data: " + err.message + "</em>";
+      }
+    }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -117,12 +182,18 @@
         const data = await res.json();
         statusEl.textContent = "Tersimpan! ID: " + data.id;
         form.reset();
+
+        // reload list setelah simpan
+        await loadUsers();
       } catch (err) {
         statusEl.textContent = "Gagal menyimpan: " + err.message;
       } finally {
         button.disabled = false;
       }
     });
+
+    // load data pertama kali saat halaman dibuka
+    loadUsers();
   </script>
 </body>
 </html>
