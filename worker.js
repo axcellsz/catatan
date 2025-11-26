@@ -15,6 +15,20 @@ function prefixForType(type) {
   }
 }
 
+// ====== HELPER UNTUK BULAN (YYYY-MM) ======
+function getMonthKeyFromDate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`; // contoh: 2025-11
+}
+
+function getMonthKeyFromISO(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  return getMonthKeyFromDate(d);
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -35,6 +49,7 @@ export default {
 
       const id = crypto.randomUUID();
       const createdAt = new Date().toISOString();
+      const month = getMonthKeyFromISO(createdAt); // <-- bulan transaksi
       const prefix = prefixForType(type);
       let record;
 
@@ -58,6 +73,7 @@ export default {
           hargaJual,
           keuntungan,
           createdAt,
+          month, // <--
         };
       }
 
@@ -107,6 +123,7 @@ export default {
           totalHargaNomor,
           keuntungan,
           createdAt,
+          month, // <--
         };
       }
 
@@ -140,8 +157,15 @@ export default {
         return new Response("Data tidak ditemukan", { status: 404 });
       }
 
+      const existingObj = JSON.parse(existing);
+
       const createdAt =
-        JSON.parse(existing).createdAt || new Date().toISOString();
+        existingObj.createdAt || new Date().toISOString();
+
+      // pakai month lama kalau ada; kalau tidak, hitung dari createdAt
+      const month =
+        existingObj.month || getMonthKeyFromISO(createdAt) || getMonthKeyFromDate(new Date());
+
       let record;
 
       // REG / OPR / VPN
@@ -164,6 +188,7 @@ export default {
           hargaJual,
           keuntungan,
           createdAt,
+          month,
         };
       }
 
@@ -212,6 +237,7 @@ export default {
           totalHargaNomor,
           keuntungan,
           createdAt,
+          month,
         };
       }
 
@@ -249,12 +275,19 @@ export default {
       });
     }
 
-    // ============= LIST PER TYPE =============
+    // ============= LIST PER TYPE (dengan filter bulan) =============
     if (request.method === "GET" && url.pathname === "/list") {
       const type = (url.searchParams.get("type") || "").toUpperCase();
       if (!ALLOWED_TYPES.includes(type)) {
         return new Response("Jenis penjualan tidak valid", { status: 400 });
       }
+
+      // month = "YYYY-MM"; kalau tidak ada → default bulan sekarang
+      const monthParam = url.searchParams.get("month");
+      const targetMonth =
+        monthParam && /^\d{4}-\d{2}$/.test(monthParam)
+          ? monthParam
+          : getMonthKeyFromDate(new Date());
 
       const prefix = prefixForType(type);
       const listResult = await env.DATA.list({ prefix });
@@ -264,12 +297,26 @@ export default {
         const value = await env.DATA.get(key.name);
         if (!value) continue;
         try {
-          items.push(JSON.parse(value));
+          const obj = JSON.parse(value);
+
+          // fallback untuk data lama yg belum punya field month
+          let itemMonth = obj.month;
+          if (!itemMonth && obj.createdAt) {
+            itemMonth = getMonthKeyFromISO(obj.createdAt);
+          }
+
+          // kalau tidak bisa tentukan bulan, tetap disimpan
+          if (itemMonth && itemMonth !== targetMonth) {
+            continue; // skip bulan lain
+          }
+
+          items.push(obj);
         } catch {
           // skip kalau parse gagal
         }
       }
 
+      // urutkan dari terbaru ke lama
       items.sort((a, b) => {
         if (!a.createdAt || !b.createdAt) return 0;
         return a.createdAt < b.createdAt ? 1 : -1;
