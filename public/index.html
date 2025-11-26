@@ -238,6 +238,62 @@
       background: #3b82f6;
       color: white;
     }
+
+    /* TOMBOL MENU MELAYANG & PANEL PILIHAN */
+    .floating-menu-btn {
+      position: fixed;
+      bottom: 64px; /* di atas footer */
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 110;
+      background: #111827;
+      color: #f9fafb;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 1.1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    .menu-panel {
+      position: fixed;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 110;
+      background: #111827;
+      color: #e5e7eb;
+      padding: 12px 14px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+      width: calc(100% - 40px);
+      max-width: 480px;
+      font-size: 0.9rem;
+    }
+    .menu-panel-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-align: center;
+      color: #9ca3af;
+    }
+    .menu-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .menu-item-btn {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid #374151;
+      background: #1f2937;
+      color: #f9fafb;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+    .menu-item-btn:focus {
+      outline: none;
+      box-shadow: 0 0 0 1px #3b82f655;
+    }
   </style>
 </head>
 <body>
@@ -352,6 +408,20 @@
       </div>
     </div>
 
+    <!-- TOMBOL MENU MELAYANG (hanya di halaman ringkasan) -->
+    <button id="menu-btn" class="floating-menu-btn hidden">☰</button>
+
+    <!-- PANEL PILIHAN MENU -->
+    <div id="menu-panel" class="menu-panel hidden">
+      <div class="menu-panel-title">Menu lainnya</div>
+      <div class="menu-list">
+        <button class="menu-item-btn" data-target-page="pengeluaran.html">CATATAN PENGELUARAN</button>
+        <button class="menu-item-btn" data-target-page="hutang.html">CATATAN HUTANG</button>
+        <button class="menu-item-btn" data-target-page="pelanggan.html">DATA PELANGGAN</button>
+        <button class="menu-item-btn" data-target-page="credit.html">DATA CREDIT</button>
+      </div>
+    </div>
+
     <!-- FOOTER FIXED -->
     <div class="footer">
       <div class="footer-inner">
@@ -381,6 +451,10 @@
 
     const formCommon = document.getElementById("form-common");
     const formAXB = document.getElementById("form-axb");
+
+    const menuBtn = document.getElementById("menu-btn");
+    const menuPanel = document.getElementById("menu-panel");
+    const menuItemButtons = Array.from(document.querySelectorAll(".menu-item-btn"));
 
     let selectedType = null;
 
@@ -428,6 +502,15 @@
       }
     }
 
+    function updateMenuVisibility() {
+      if (!selectedType) {
+        menuBtn.classList.remove("hidden");
+      } else {
+        menuBtn.classList.add("hidden");
+        menuPanel.classList.add("hidden");
+      }
+    }
+
     function updateFooterUI() {
       typeButtons.forEach(btn => {
         const t = btn.getAttribute("data-type");
@@ -444,6 +527,8 @@
         currentTypeLabel.classList.add("hidden");
         entriesTitleEl.textContent = "Ringkasan penjualan";
       }
+
+      updateMenuVisibility();
     }
 
     // === RINGKASAN SEMUA TRANSAKSI (awal halaman) ===
@@ -622,6 +707,21 @@
       } else {
         document.getElementById("jenisTrx").focus();
       }
+    });
+
+    // tombol MENU (☰)
+    menuBtn.addEventListener("click", () => {
+      menuPanel.classList.toggle("hidden");
+    });
+
+    // klik item menu -> pindah halaman
+    menuItemButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const target = btn.getAttribute("data-target-page");
+        if (target) {
+          window.location.href = target;
+        }
+      });
     });
 
     // edit / hapus
