@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Data Penjualan</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -20,12 +18,12 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
-      padding-bottom: 70px; /* ruang untuk footer fixed */
+      padding-bottom: 70px; /* ruang footer */
     }
     .content {
       flex: 1;
       display: flex;
-      align-items: flex-start;   /* penting: supaya kartu bisa panjang & discroll */
+      align-items: flex-start;   /* kartu di atas, bisa memanjang */
       justify-content: center;
       padding: 16px;
     }
@@ -36,13 +34,11 @@
       box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
       max-width: 520px;
       width: 100%;
-      /* max-height: 90vh;  <-- dihapus agar halaman bisa panjang */
       display: flex;
       flex-direction: column;
     }
     h1 {
-      margin-top: 0;
-      margin-bottom: 8px;
+      margin: 0 0 8px;
       font-size: 1.4rem;
       text-align: center;
     }
@@ -81,13 +77,8 @@
       color: #fff;
       -webkit-tap-highlight-color: transparent;
     }
-    button:focus {
-      outline: none;
-    }
-    button:disabled {
-      opacity: 0.7;
-      cursor: default;
-    }
+    button:focus { outline: none; }
+    button:disabled { opacity: 0.7; cursor: default; }
     #status {
       margin-top: 8px;
       font-size: 0.85rem;
@@ -115,26 +106,20 @@
       padding: 6px 0;
       border-bottom: 1px dashed #eee;
     }
-    .entry:last-child {
-      border-bottom: none;
-    }
+    .entry:last-child { border-bottom: none; }
     .entry-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 4px;
     }
-    .entry-main {
-      flex: 1;
-    }
+    .entry-main { flex: 1; }
     .entry-actions {
       display: flex;
       flex-direction: column;
       gap: 4px;
     }
-    .entry-name {
-      font-weight: 600;
-    }
+    .entry-name { font-weight: 600; }
     .entry-phone {
       font-family: monospace;
       font-size: 0.8rem;
@@ -164,9 +149,7 @@
       border-radius: 999px;
       background: #4b5563;
     }
-    .btn-small.delete {
-      background: #b91c1c;
-    }
+    .btn-small.delete { background: #b91c1c; }
 
     .footer {
       position: fixed;
@@ -226,9 +209,7 @@
       margin-bottom: 8px;
       color: #2563eb;
     }
-    .hidden {
-      display: none !important;
-    }
+    .hidden { display: none !important; }
 
     .section-title {
       font-size: 0.8rem;
@@ -249,9 +230,7 @@
       border-radius: 12px;
       margin-top: 10px;
     }
-    #data-form label {
-      color: #f3f4f6;
-    }
+    #data-form label { color: #f3f4f6; }
     #data-form input {
       background: #1f2937;
       border: 1px solid #374151;
@@ -289,7 +268,7 @@
           </div>
         </div>
 
-        <!-- FORM INPUT (Bawah, hidden default) -->
+        <!-- FORM INPUT -->
         <form id="data-form" class="hidden">
           <input type="hidden" id="type" name="type" />
           <input type="hidden" id="editingId" name="editingId" />
@@ -299,16 +278,16 @@
             <div class="section-title">Data Transaksi (REG / OPR / VPN)</div>
             <div>
               <label for="jenisTrx">Jenis Trx</label>
-              <input id="jenisTrx" name="jenisTrx" type="text" required />
+              <input id="jenisTrx" name="jenisTrx" type="text" />
             </div>
             <div class="grid-2">
               <div>
                 <label for="hargaModal">Harga modal</label>
-                <input id="hargaModal" name="hargaModal" type="number" inputmode="decimal" required />
+                <input id="hargaModal" name="hargaModal" type="number" inputmode="decimal" />
               </div>
               <div>
                 <label for="hargaJual">Harga jual</label>
-                <input id="hargaJual" name="hargaJual" type="number" inputmode="decimal" required />
+                <input id="hargaJual" name="hargaJual" type="number" inputmode="decimal" />
               </div>
             </div>
           </div>
@@ -425,6 +404,7 @@
     function configureFormSections() {
       if (!selectedType) return;
       typeInput.value = selectedType;
+
       if (selectedType === "AXB") {
         formCommon.classList.add("hidden");
         formAXB.classList.remove("hidden");
@@ -464,9 +444,8 @@
 
       try {
         const res = await fetch("/list?type=" + encodeURIComponent(selectedType));
-        if (!res.ok) {
-          throw new Error("Gagal memuat data (" + res.status + ")");
-        }
+        if (!res.ok) throw new Error("Gagal memuat data (" + res.status + ")");
+
         const data = await res.json();
         const items = data.items || [];
 
@@ -484,6 +463,7 @@
           div.className = "entry";
 
           let mainHtml = "";
+
           if (item.type === "REG" || item.type === "OPR" || item.type === "VPN") {
             mainHtml = `
               <div class="entry-name">${item.jenisTrx || "-"}</div>
@@ -508,7 +488,7 @@
             `;
           }
 
-        const timeHtml = `
+          const timeHtml = `
             <div class="entry-time">${item.createdAt || ""}</div>
             <div class="entry-type">${item.type || ""}</div>
           `;
@@ -538,7 +518,7 @@
       }
     }
 
-    // Pilih jenis penjualan -> tampilkan data saja, form tetap hidden
+    // pilih jenis
     typeButtons.forEach(btn => {
       btn.addEventListener("click", async () => {
         const t = btn.getAttribute("data-type");
@@ -551,7 +531,7 @@
       });
     });
 
-    // Tombol + -> buka form (tambah baru)
+    // tombol +
     addBtn.addEventListener("click", () => {
       if (!selectedType) return;
       clearForm();
@@ -565,7 +545,7 @@
       }
     });
 
-    // Edit / Hapus
+    // edit / hapus
     entriesEl.addEventListener("click", async (e) => {
       const btn = e.target;
       if (!(btn instanceof HTMLElement)) return;
@@ -578,9 +558,10 @@
         try {
           const res = await fetch("/list?type=" + encodeURIComponent(selectedType));
           if (!res.ok) throw new Error("Gagal ambil data");
+
           const data = await res.json();
           const items = data.items || [];
-          const item = items.find((x) => x.id === id);
+          const item = items.find(x => x.id === id);
           if (!item) {
             alert("Data tidak ditemukan");
             return;
@@ -641,7 +622,7 @@
       }
     });
 
-    // Submit form (tambah / update)
+    // submit form
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -698,7 +679,6 @@
 
         await res.json().catch(() => ({}));
 
-        // Setelah sukses: sembunyikan form & refresh list
         editingIdInput.value = "";
         form.classList.add("hidden");
         clearForm();
