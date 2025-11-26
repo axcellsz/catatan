@@ -1,17 +1,16 @@
-const ALLOWED_TYPES = ["REG", "OPR", "VPN", "AXB"];
+const ALLOWED_TYPES = ["REG","OPR","VPN","AXB","ATX","OTX","UJC","CRD"];
 
 function prefixForType(type) {
   switch (type) {
-    case "REG":
-      return "reg:";
-    case "OPR":
-      return "opr:";
-    case "VPN":
-      return "vpn:";
-    case "AXB":
-      return "axb:";
-    default:
-      throw new Error("Unknown type");
+    case "REG": return "reg:";
+    case "OPR": return "opr:";
+    case "VPN": return "vpn:";
+    case "AXB": return "axb:";
+    case "ATX": return "atx:";
+    case "OTX": return "otx:";
+    case "UJC": return "ujc:";
+    case "CRD": return "crd:";
+    default: throw new Error("Unknown type");
   }
 }
 
