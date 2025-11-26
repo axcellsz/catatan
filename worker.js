@@ -13,6 +13,13 @@ export default {
 
       const name = (payload.name || "").trim();
       const phone = (payload.phone || "").trim();
+      const type = (payload.type || "").trim().toUpperCase();
+
+      const allowedTypes = ["REG", "OPR", "VPN", "AXB"];
+
+      if (!allowedTypes.includes(type)) {
+        return new Response("Jenis penjualan tidak valid", { status: 400 });
+      }
 
       if (!name || !phone) {
         return new Response("Nama dan nomor HP wajib diisi", { status: 400 });
@@ -24,10 +31,12 @@ export default {
         id,
         name,
         phone,
+        type,
         createdAt: new Date().toISOString(),
       };
 
-      await env.DATA.put(`user:${id}`, JSON.stringify(record));
+      // simpan ke KV DATA, prefix bisa apa saja (di sini pakai "sale:")
+      await env.DATA.put(`sale:${id}`, JSON.stringify(record));
 
       return new Response(JSON.stringify({ success: true, id }), {
         status: 200,
@@ -39,8 +48,7 @@ export default {
 
     // GET /list -> ambil semua data dari KV DATA
     if (request.method === "GET" && url.pathname === "/list") {
-      // list key dengan prefix user:
-      const listResult = await env.DATA.list({ prefix: "user:" });
+      const listResult = await env.DATA.list({ prefix: "sale:" });
 
       const items = [];
       for (const key of listResult.keys) {
@@ -50,11 +58,11 @@ export default {
         try {
           items.push(JSON.parse(value));
         } catch {
-          // kalau parse gagal, lewati saja
+          // kalau parse gagal, skip
         }
       }
 
-      // bisa di-sort kalau mau, misal terbaru dulu:
+      // sort terbaru dulu
       items.sort((a, b) => {
         if (!a.createdAt || !b.createdAt) return 0;
         return a.createdAt < b.createdAt ? 1 : -1;
