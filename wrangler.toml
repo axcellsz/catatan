@@ -6,5 +6,6 @@ compatibility_date = "2025-11-26"
 
 # existing KV for users
 kv_namespaces = [
-  { binding = "DATA", id = "233e686671e142839a8185a3d5bbdbf8" }
+  { binding = "DATA", id = "233e686671e142839a8185a3d5bbdbf8" },
+  { binding = "PAGES", id = "8b46f9c04843476e9fa922e4bfffd1af" }
 ]
