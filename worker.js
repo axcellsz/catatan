@@ -1,8 +1,25 @@
+const ALLOWED_TYPES = ["REG", "OPR", "VPN", "AXB"];
+
+function prefixForType(type) {
+  switch (type) {
+    case "REG":
+      return "reg:";
+    case "OPR":
+      return "opr:";
+    case "VPN":
+      return "vpn:";
+    case "AXB":
+      return "axb:";
+    default:
+      throw new Error("Unknown type");
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // POST /submit -> simpan ke KV DATA
+    // ============= CREATE / SUBMIT =============
     if (request.method === "POST" && url.pathname === "/submit") {
       let payload;
       try {
@@ -11,32 +28,77 @@ export default {
         return new Response("Body harus JSON", { status: 400 });
       }
 
-      const name = (payload.name || "").trim();
-      const phone = (payload.phone || "").trim();
       const type = (payload.type || "").trim().toUpperCase();
-
-      const allowedTypes = ["REG", "OPR", "VPN", "AXB"];
-
-      if (!allowedTypes.includes(type)) {
+      if (!ALLOWED_TYPES.includes(type)) {
         return new Response("Jenis penjualan tidak valid", { status: 400 });
       }
 
-      if (!name || !phone) {
-        return new Response("Nama dan nomor HP wajib diisi", { status: 400 });
+      const id = crypto.randomUUID();
+      const createdAt = new Date().toISOString();
+      const prefix = prefixForType(type);
+      let record;
+
+      if (type === "REG" || type === "OPR" || type === "VPN") {
+        const jenisTrx = (payload.jenisTrx || "").trim();
+        const hargaModal = Number(payload.hargaModal || 0);
+        const hargaJual = Number(payload.hargaJual || 0);
+        if (!jenisTrx || isNaN(hargaModal) || isNaN(hargaJual)) {
+          return new Response("Data REG/OPR/VPN tidak lengkap", { status: 400 });
+        }
+        const keuntungan = hargaJual - hargaModal;
+
+        record = {
+          id,
+          type,
+          jenisTrx,
+          hargaModal,
+          hargaJual,
+          keuntungan,
+          createdAt,
+        };
+      } else if (type === "AXB") {
+        const namaPengelola = (payload.namaPengelola || "").trim();
+        const nomorPengelola = (payload.nomorPengelola || "").trim();
+        const hargaPaket = Number(payload.hargaPaket || 0);
+
+        if (!namaPengelola || !nomorPengelola || isNaN(hargaPaket)) {
+          return new Response("Data AXB tidak lengkap", { status: 400 });
+        }
+
+        // nomor & harga A1..A5 boleh kosong
+        const nomorA1 = (payload.nomorA1 || "").trim();
+        const nomorA2 = (payload.nomorA2 || "").trim();
+        const nomorA3 = (payload.nomorA3 || "").trim();
+        const nomorA4 = (payload.nomorA4 || "").trim();
+        const nomorA5 = (payload.nomorA5 || "").trim();
+
+        const hargaA1 = Number(payload.hargaA1 || 0);
+        const hargaA2 = Number(payload.hargaA2 || 0);
+        const hargaA3 = Number(payload.hargaA3 || 0);
+        const hargaA4 = Number(payload.hargaA4 || 0);
+        const hargaA5 = Number(payload.hargaA5 || 0);
+
+        record = {
+          id,
+          type,
+          namaPengelola,
+          nomorPengelola,
+          hargaPaket,
+          nomorA1,
+          hargaA1,
+          nomorA2,
+          hargaA2,
+          nomorA3,
+          hargaA3,
+          nomorA4,
+          hargaA4,
+          nomorA5,
+          hargaA5,
+          createdAt,
+        };
       }
 
-      const id = crypto.randomUUID();
-
-      const record = {
-        id,
-        name,
-        phone,
-        type,
-        createdAt: new Date().toISOString(),
-      };
-
-      // simpan ke KV DATA, prefix bisa apa saja (di sini pakai "sale:")
-      await env.DATA.put(`sale:${id}`, JSON.stringify(record));
+      await env.DATA.put(prefix + id, JSON.stringify(record));
 
       return new Response(JSON.stringify({ success: true, id }), {
         status: 200,
@@ -46,23 +108,145 @@ export default {
       });
     }
 
-    // GET /list -> ambil semua data dari KV DATA
+    // ============= UPDATE =============
+    if (request.method === "POST" && url.pathname === "/update") {
+      let payload;
+      try {
+        payload = await request.json();
+      } catch {
+        return new Response("Body harus JSON", { status: 400 });
+      }
+
+      const id = (payload.id || "").trim();
+      const type = (payload.type || "").trim().toUpperCase();
+      if (!id || !ALLOWED_TYPES.includes(type)) {
+        return new Response("ID atau type tidak valid", { status: 400 });
+      }
+
+      const prefix = prefixForType(type);
+      const key = prefix + id;
+      const existing = await env.DATA.get(key);
+      if (!existing) {
+        return new Response("Data tidak ditemukan", { status: 404 });
+      }
+
+      const createdAt = JSON.parse(existing).createdAt || new Date().toISOString();
+      let record;
+
+      if (type === "REG" || type === "OPR" || type === "VPN") {
+        const jenisTrx = (payload.jenisTrx || "").trim();
+        const hargaModal = Number(payload.hargaModal || 0);
+        const hargaJual = Number(payload.hargaJual || 0);
+        if (!jenisTrx || isNaN(hargaModal) || isNaN(hargaJual)) {
+          return new Response("Data REG/OPR/VPN tidak lengkap", { status: 400 });
+        }
+        const keuntungan = hargaJual - hargaModal;
+
+        record = {
+          id,
+          type,
+          jenisTrx,
+          hargaModal,
+          hargaJual,
+          keuntungan,
+          createdAt,
+        };
+      } else if (type === "AXB") {
+        const namaPengelola = (payload.namaPengelola || "").trim();
+        const nomorPengelola = (payload.nomorPengelola || "").trim();
+        const hargaPaket = Number(payload.hargaPaket || 0);
+
+        if (!namaPengelola || !nomorPengelola || isNaN(hargaPaket)) {
+          return new Response("Data AXB tidak lengkap", { status: 400 });
+        }
+
+        const nomorA1 = (payload.nomorA1 || "").trim();
+        const nomorA2 = (payload.nomorA2 || "").trim();
+        const nomorA3 = (payload.nomorA3 || "").trim();
+        const nomorA4 = (payload.nomorA4 || "").trim();
+        const nomorA5 = (payload.nomorA5 || "").trim();
+
+        const hargaA1 = Number(payload.hargaA1 || 0);
+        const hargaA2 = Number(payload.hargaA2 || 0);
+        const hargaA3 = Number(payload.hargaA3 || 0);
+        const hargaA4 = Number(payload.hargaA4 || 0);
+        const hargaA5 = Number(payload.hargaA5 || 0);
+
+        record = {
+          id,
+          type,
+          namaPengelola,
+          nomorPengelola,
+          hargaPaket,
+          nomorA1,
+          hargaA1,
+          nomorA2,
+          hargaA2,
+          nomorA3,
+          hargaA3,
+          nomorA4,
+          hargaA4,
+          nomorA5,
+          hargaA5,
+          createdAt,
+        };
+      }
+
+      await env.DATA.put(key, JSON.stringify(record));
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+
+    // ============= DELETE =============
+    if (request.method === "POST" && url.pathname === "/delete") {
+      let payload;
+      try {
+        payload = await request.json();
+      } catch {
+        return new Response("Body harus JSON", { status: 400 });
+      }
+
+      const id = (payload.id || "").trim();
+      const type = (payload.type || "").trim().toUpperCase();
+      if (!id || !ALLOWED_TYPES.includes(type)) {
+        return new Response("ID atau type tidak valid", { status: 400 });
+      }
+
+      const prefix = prefixForType(type);
+      const key = prefix + id;
+
+      await env.DATA.delete(key);
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+
+    // ============= LIST PER TYPE =============
     if (request.method === "GET" && url.pathname === "/list") {
-      const listResult = await env.DATA.list({ prefix: "sale:" });
+      const type = (url.searchParams.get("type") || "").toUpperCase();
+      if (!ALLOWED_TYPES.includes(type)) {
+        return new Response("Jenis penjualan tidak valid", { status: 400 });
+      }
+
+      const prefix = prefixForType(type);
+      const listResult = await env.DATA.list({ prefix });
 
       const items = [];
       for (const key of listResult.keys) {
         const value = await env.DATA.get(key.name);
         if (!value) continue;
-
         try {
           items.push(JSON.parse(value));
         } catch {
-          // kalau parse gagal, skip
+          // skip kalau parse gagal
         }
       }
 
-      // sort terbaru dulu
       items.sort((a, b) => {
         if (!a.createdAt || !b.createdAt) return 0;
         return a.createdAt < b.createdAt ? 1 : -1;
@@ -70,13 +254,11 @@ export default {
 
       return new Response(JSON.stringify({ items }), {
         status: 200,
-        headers: {
-          "content-type": "application/json; charset=utf-8",
-        },
+        headers: { "content-type": "application/json; charset=utf-8" },
       });
     }
 
-    // GET asset (index.html, dll) dari KV PAGES
+    // ============= STATIC (PAGES) =============
     if (request.method === "GET") {
       let key = url.pathname === "/" ? "index.html" : url.pathname.slice(1);
 
@@ -94,9 +276,7 @@ export default {
 
       return new Response(asset, {
         status: 200,
-        headers: {
-          "content-type": contentType,
-        },
+        headers: { "content-type": contentType },
       });
     }
 
