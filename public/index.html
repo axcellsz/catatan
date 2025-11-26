@@ -25,7 +25,7 @@
     .content {
       flex: 1;
       display: flex;
-      align-items: center;
+      align-items: flex-start;   /* penting: supaya kartu bisa panjang & discroll */
       justify-content: center;
       padding: 16px;
     }
@@ -36,7 +36,7 @@
       box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
       max-width: 520px;
       width: 100%;
-      max-height: 90vh;
+      /* max-height: 90vh;  <-- dihapus agar halaman bisa panjang */
       display: flex;
       flex-direction: column;
     }
@@ -99,7 +99,6 @@
       border-top: 1px solid #eee;
       padding-top: 8px;
       font-size: 0.85rem;
-      overflow-y: auto;
       flex: 1;
     }
     .entries-header {
@@ -235,44 +234,37 @@
       font-size: 0.8rem;
       font-weight: 600;
       margin: 6px 0 2px;
-      color: #374151;
+      color: #e5e7eb;
     }
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 6px 10px;
     }
+
     /* FORM INPUT AREA GELAP */
-#data-form {
-  background: #111827;     /* hitam kebiruan */
-  padding: 14px;
-  border-radius: 12px;
-  margin-top: 10px;
-}
-
-/* Label putih */
-#data-form label {
-  color: #f3f4f6;
-}
-
-/* Input abu gelap */
-#data-form input {
-  background: #1f2937;
-  border: 1px solid #374151;
-  color: #f9fafb;
-}
-
-/* Input fokus glow biru */
-#data-form input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 1px #3b82f655;
-}
-
-/* Tombol simpan */
-#data-form button {
-  background: #3b82f6;
-  color: white;
-}
+    #data-form {
+      background: #111827;
+      padding: 14px;
+      border-radius: 12px;
+      margin-top: 10px;
+    }
+    #data-form label {
+      color: #f3f4f6;
+    }
+    #data-form input {
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #f9fafb;
+    }
+    #data-form input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 1px #3b82f655;
+    }
+    #data-form button {
+      background: #3b82f6;
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -286,7 +278,7 @@
 
         <div id="current-type" class="current-type-label hidden"></div>
 
-        <!-- LIST DATA (DI ATAS) -->
+        <!-- LIST DATA -->
         <div class="entries">
           <div class="entries-header">
             <span id="entries-title">Data tersimpan</span>
@@ -297,7 +289,7 @@
           </div>
         </div>
 
-        <!-- FORM INPUT (DI BAWAH LIST, HIDDEN AWALNYA) -->
+        <!-- FORM INPUT (Bawah, hidden default) -->
         <form id="data-form" class="hidden">
           <input type="hidden" id="type" name="type" />
           <input type="hidden" id="editingId" name="editingId" />
@@ -512,10 +504,11 @@
               <div class="entry-phone">
                 Paket: ${item.hargaPaket ?? 0} | Nomor: ${summary.join(", ") || "-"}
               </div>
+              <div class="tag">Keuntungan: ${item.keuntungan ?? 0}</div>
             `;
           }
 
-          const timeHtml = `
+        const timeHtml = `
             <div class="entry-time">${item.createdAt || ""}</div>
             <div class="entry-type">${item.type || ""}</div>
           `;
@@ -558,7 +551,7 @@
       });
     });
 
-    // Tombol + -> buka form (mode tambah) di bawah list
+    // Tombol + -> buka form (tambah baru)
     addBtn.addEventListener("click", () => {
       if (!selectedType) return;
       clearForm();
@@ -572,7 +565,7 @@
       }
     });
 
-    // Klik Edit / Hapus
+    // Edit / Hapus
     entriesEl.addEventListener("click", async (e) => {
       const btn = e.target;
       if (!(btn instanceof HTMLElement)) return;
