@@ -38,10 +38,24 @@
       flex-direction: column;
     }
     h1 {
-      margin: 0 0 8px;
+      margin: 0 0 4px;
       font-size: 1.4rem;
       text-align: center;
     }
+    /* filter bulan */
+    #month-filter-wrapper {
+      margin: 4px 0 8px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #555;
+    }
+    #month-filter {
+      font-size: 0.8rem;
+      padding: 4px 6px;
+      border-radius: 999px;
+      border: 1px solid #ddd;
+    }
+
     label {
       display: block;
       font-size: 0.85rem;
@@ -302,6 +316,12 @@
       <div class="card">
         <h1>AXSTORE</h1>
 
+        <!-- FILTER BULAN -->
+        <div id="month-filter-wrapper">
+          <label for="month-filter">Bulan:</label>
+          <input type="month" id="month-filter" />
+        </div>
+
         <div id="current-type" class="current-type-label hidden"></div>
 
         <!-- LIST DATA -->
@@ -456,7 +476,22 @@
     const menuPanel = document.getElementById("menu-panel");
     const menuItemButtons = Array.from(document.querySelectorAll(".menu-item-btn"));
 
+    const monthInput = document.getElementById("month-filter");
+
     let selectedType = null;
+    let currentMonth = null; // "YYYY-MM"
+
+    // Dapatkan bulan default (bulan sekarang)
+    function getDefaultMonth() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      return `${y}-${m}`;
+    }
+
+    function getActiveMonth() {
+      return currentMonth || getDefaultMonth();
+    }
 
     // FORMAT ANGKA (150.000, 1.234.567, dst)
     function formatNumber(n) {
@@ -531,9 +566,11 @@
       updateMenuVisibility();
     }
 
-    // === RINGKASAN SEMUA TRANSAKSI (awal halaman) ===
+    // === RINGKASAN SEMUA TRANSAKSI (per bulan aktif) ===
     async function loadSummary() {
       const TYPES = ["REG", "OPR", "VPN", "AXB"];
+      const month = getActiveMonth();
+
       entriesTitleEl.textContent = "Ringkasan penjualan";
       entriesEl.innerHTML = "<em>Memuat ringkasan...</em>";
       entriesCountEl.textContent = "";
@@ -544,7 +581,9 @@
 
       for (const t of TYPES) {
         try {
-          const res = await fetch("/list?type=" + encodeURIComponent(t));
+          const res = await fetch(
+            `/list?type=${encodeURIComponent(t)}&month=${encodeURIComponent(month)}`
+          );
           if (!res.ok) throw new Error("status " + res.status);
           const data = await res.json();
           const items = data.items || [];
@@ -597,16 +636,18 @@
 
     async function loadItems() {
       if (!selectedType) {
-        // kalau tidak ada type, tampilkan ringkasan saja
         await loadSummary();
         return;
       }
 
+      const month = getActiveMonth();
       entriesEl.innerHTML = "<em>Memuat data...</em>";
       entriesCountEl.textContent = "";
 
       try {
-        const res = await fetch("/list?type=" + encodeURIComponent(selectedType));
+        const res = await fetch(
+          `/list?type=${encodeURIComponent(selectedType)}&month=${encodeURIComponent(month)}`
+        );
         if (!res.ok) throw new Error("Gagal memuat data (" + res.status + ")");
 
         const data = await res.json();
@@ -735,7 +776,10 @@
       // Edit
       if (btn.classList.contains("edit")) {
         try {
-          const res = await fetch("/list?type=" + encodeURIComponent(selectedType));
+          const month = getActiveMonth();
+          const res = await fetch(
+            `/list?type=${encodeURIComponent(selectedType)}&month=${encodeURIComponent(month)}`
+          );
           if (!res.ok) throw new Error("Gagal ambil data");
 
           const data = await res.json();
@@ -870,8 +914,25 @@
     });
 
     // === INIT: saat halaman pertama dibuka ===
-    updateFooterUI();
-    loadSummary();
+    (function init() {
+      const defaultMonth = getDefaultMonth();
+      currentMonth = defaultMonth;
+      if (monthInput) monthInput.value = defaultMonth;
+
+      if (monthInput) {
+        monthInput.addEventListener("change", () => {
+          currentMonth = monthInput.value || null;
+          if (!selectedType) {
+            loadSummary();
+          } else {
+            loadItems();
+          }
+        });
+      }
+
+      updateFooterUI();
+      loadSummary();
+    })();
   </script>
 </body>
 </html>
