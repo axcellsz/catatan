@@ -38,6 +38,7 @@ export default {
       const prefix = prefixForType(type);
       let record;
 
+      // REG / OPR / VPN
       if (type === "REG" || type === "OPR" || type === "VPN") {
         const jenisTrx = (payload.jenisTrx || "").trim();
         const hargaModal = Number(payload.hargaModal || 0);
@@ -56,7 +57,10 @@ export default {
           keuntungan,
           createdAt,
         };
-      } else if (type === "AXB") {
+      }
+
+      // AXB
+      else if (type === "AXB") {
         const namaPengelola = (payload.namaPengelola || "").trim();
         const nomorPengelola = (payload.nomorPengelola || "").trim();
         const hargaPaket = Number(payload.hargaPaket || 0);
@@ -65,7 +69,6 @@ export default {
           return new Response("Data AXB tidak lengkap", { status: 400 });
         }
 
-        // nomor & harga A1..A5 boleh kosong
         const nomorA1 = (payload.nomorA1 || "").trim();
         const nomorA2 = (payload.nomorA2 || "").trim();
         const nomorA3 = (payload.nomorA3 || "").trim();
@@ -77,6 +80,10 @@ export default {
         const hargaA3 = Number(payload.hargaA3 || 0);
         const hargaA4 = Number(payload.hargaA4 || 0);
         const hargaA5 = Number(payload.hargaA5 || 0);
+
+        const totalHargaNomor =
+          hargaA1 + hargaA2 + hargaA3 + hargaA4 + hargaA5;
+        const keuntungan = totalHargaNomor - hargaPaket;
 
         record = {
           id,
@@ -94,6 +101,8 @@ export default {
           hargaA4,
           nomorA5,
           hargaA5,
+          totalHargaNomor,
+          keuntungan,
           createdAt,
         };
       }
@@ -130,9 +139,11 @@ export default {
         return new Response("Data tidak ditemukan", { status: 404 });
       }
 
-      const createdAt = JSON.parse(existing).createdAt || new Date().toISOString();
+      const createdAt =
+        JSON.parse(existing).createdAt || new Date().toISOString();
       let record;
 
+      // REG / OPR / VPN
       if (type === "REG" || type === "OPR" || type === "VPN") {
         const jenisTrx = (payload.jenisTrx || "").trim();
         const hargaModal = Number(payload.hargaModal || 0);
@@ -151,7 +162,10 @@ export default {
           keuntungan,
           createdAt,
         };
-      } else if (type === "AXB") {
+      }
+
+      // AXB
+      else if (type === "AXB") {
         const namaPengelola = (payload.namaPengelola || "").trim();
         const nomorPengelola = (payload.nomorPengelola || "").trim();
         const hargaPaket = Number(payload.hargaPaket || 0);
@@ -172,6 +186,10 @@ export default {
         const hargaA4 = Number(payload.hargaA4 || 0);
         const hargaA5 = Number(payload.hargaA5 || 0);
 
+        const totalHargaNomor =
+          hargaA1 + hargaA2 + hargaA3 + hargaA4 + hargaA5;
+        const keuntungan = totalHargaNomor - hargaPaket;
+
         record = {
           id,
           type,
@@ -188,6 +206,8 @@ export default {
           hargaA4,
           nomorA5,
           hargaA5,
+          totalHargaNomor,
+          keuntungan,
           createdAt,
         };
       }
@@ -270,9 +290,12 @@ export default {
 
       let contentType = "text/plain; charset=utf-8";
       if (key.endsWith(".html")) contentType = "text/html; charset=utf-8";
-      else if (key.endsWith(".js")) contentType = "application/javascript; charset=utf-8";
-      else if (key.endsWith(".css")) contentType = "text/css; charset=utf-8";
-      else if (key.endsWith(".json")) contentType = "application/json; charset=utf-8";
+      else if (key.endsWith(".js"))
+        contentType = "application/javascript; charset=utf-8";
+      else if (key.endsWith(".css"))
+        contentType = "text/css; charset=utf-8";
+      else if (key.endsWith(".json"))
+        contentType = "application/json; charset=utf-8";
 
       return new Response(asset, {
         status: 200,
