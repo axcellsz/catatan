@@ -24,7 +24,7 @@ export default {
       let payload;
       try {
         payload = await request.json();
-      } catch (e) {
+      } catch {
         return new Response("Body harus JSON", { status: 400 });
       }
 
@@ -43,9 +43,11 @@ export default {
         const jenisTrx = (payload.jenisTrx || "").trim();
         const hargaModal = Number(payload.hargaModal || 0);
         const hargaJual = Number(payload.hargaJual || 0);
+
         if (!jenisTrx || isNaN(hargaModal) || isNaN(hargaJual)) {
           return new Response("Data REG/OPR/VPN tidak lengkap", { status: 400 });
         }
+
         const keuntungan = hargaJual - hargaModal;
 
         record = {
@@ -63,6 +65,7 @@ export default {
       else if (type === "AXB") {
         const namaPengelola = (payload.namaPengelola || "").trim();
         const nomorPengelola = (payload.nomorPengelola || "").trim();
+
         const hargaPaket = Number(payload.hargaPaket || 0);
 
         if (!namaPengelola || !nomorPengelola || isNaN(hargaPaket)) {
@@ -111,9 +114,7 @@ export default {
 
       return new Response(JSON.stringify({ success: true, id }), {
         status: 200,
-        headers: {
-          "content-type": "application/json; charset=utf-8",
-        },
+        headers: { "content-type": "application/json; charset=utf-8" },
       });
     }
 
@@ -148,9 +149,11 @@ export default {
         const jenisTrx = (payload.jenisTrx || "").trim();
         const hargaModal = Number(payload.hargaModal || 0);
         const hargaJual = Number(payload.hargaJual || 0);
+
         if (!jenisTrx || isNaN(hargaModal) || isNaN(hargaJual)) {
           return new Response("Data REG/OPR/VPN tidak lengkap", { status: 400 });
         }
+
         const keuntungan = hargaJual - hargaModal;
 
         record = {
@@ -281,7 +284,6 @@ export default {
     // ============= STATIC (PAGES) =============
     if (request.method === "GET") {
       let key = url.pathname === "/" ? "index.html" : url.pathname.slice(1);
-
       const asset = await env.PAGES.get(key);
 
       if (!asset) {
