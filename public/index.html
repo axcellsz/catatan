@@ -251,7 +251,6 @@
     <div class="content">
       <div class="card">
         <h1>AXSTORE</h1>
-        
 
         <div id="current-type" class="current-type-label hidden"></div>
 
@@ -261,8 +260,7 @@
             <span id="entries-title">Catatan penjualan</span>
             <small id="entries-count"></small>
           </div>
-          <div id="entries" class="entries-list">
-        </div>
+          <div id="entries" class="entries-list"></div>
         </div>
 
         <!-- FORM INPUT -->
@@ -392,6 +390,25 @@
 
     let selectedType = null;
 
+    // === FORMAT WAKTU: Kamis / 27 Nov 2025 / 19:00 ===
+    function formatDate(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+
+      const hari = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+      const bulan = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+
+      const namaHari = hari[d.getDay()];
+      const tanggal = String(d.getDate()).padStart(2, "0");
+      const namaBulan = bulan[d.getMonth()];
+      const tahun = d.getFullYear();
+
+      const jam = String(d.getHours()).padStart(2, "0");
+      const menit = String(d.getMinutes()).padStart(2, "0");
+
+      return `${namaHari} / ${tanggal} ${namaBulan} ${tahun} / ${jam}:${menit}`;
+    }
+
     function clearForm() {
       form.reset();
       editingIdInput.value = "";
@@ -487,7 +504,7 @@
           }
 
           const timeHtml = `
-            <div class="entry-time">${item.createdAt || ""}</div>
+            <div class="entry-time">${formatDate(item.createdAt)}</div>
             <div class="entry-type">${item.type || ""}</div>
           `;
 
