@@ -18,7 +18,7 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
-      padding-bottom: 90px; /* ruang untuk footer */
+      padding-bottom: 90px;
     }
     .content {
       flex: 1;
@@ -46,8 +46,23 @@
       text-align: center;
       font-size: 0.85rem;
       color: #666;
+      margin-bottom: 4px;
+    }
+
+    /* FILTER BULAN */
+    #month-filter-wrapper {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #555;
       margin-bottom: 8px;
     }
+    #month-filter {
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #ddd;
+    }
+
     label {
       display: block;
       font-size: 0.85rem;
@@ -108,6 +123,7 @@
       border-bottom: 1px dashed #eee;
     }
     .entry:last-child { border-bottom: none; }
+
     .entry-top {
       display: flex;
       justify-content: space-between;
@@ -115,6 +131,7 @@
       gap: 4px;
     }
     .entry-main { flex: 1; }
+
     .entry-name { font-weight: 600; }
     .entry-amount {
       font-family: monospace;
@@ -125,6 +142,23 @@
       color: #666;
       margin-top: 2px;
     }
+
+    .entry-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .btn-small {
+      font-size: 0.75rem;
+      padding: 4px 6px;
+      border-radius: 999px;
+      background: #4b5563;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-small.delete { background: #b91c1c; }
 
     .footer {
       position: fixed;
@@ -175,7 +209,7 @@
 
     .hidden { display: none !important; }
 
-    /* FORM INPUT PENGELUARAN (tema gelap seperti index) */
+    /* FORM INPUT PENGELUARAN (tema gelap) */
     #data-form {
       background: #111827;
       padding: 14px;
@@ -203,7 +237,7 @@
     .fab-btn {
       position: fixed;
       right: 16px;
-      bottom: 80px; /* di atas footer */
+      bottom: 80px;
       width: 52px;
       height: 52px;
       border-radius: 999px;
@@ -227,12 +261,17 @@
         <h1>AXSTORE</h1>
         <div class="subtitle">Catatan Pengeluaran</div>
 
+        <div id="month-filter-wrapper">
+          <label for="month-filter">Bulan:</label>
+          <input type="month" id="month-filter" />
+        </div>
+
         <div id="current-type" class="current-type-label hidden"></div>
 
         <!-- LIST DATA -->
         <div class="entries">
           <div class="entries-header">
-            <span id="entries-title">Data tersimpan</span>
+            <span id="entries-title">Ringkasan pengeluaran</span>
             <small id="entries-count"></small>
           </div>
           <div id="entries" class="entries-list"></div>
@@ -286,16 +325,26 @@
     const currentTypeLabel = document.getElementById("current-type");
     const addBtn = document.getElementById("add-btn");
     const typeButtons = Array.from(document.querySelectorAll(".type-btn"));
+    const monthInput = document.getElementById("month-filter");
 
     let selectedType = null;
+    let currentMonth = null; // "YYYY-MM"
 
-    // format angka ribuan
+    function getDefaultMonth() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      return `${y}-${m}`;
+    }
+    function getActiveMonth() {
+      return currentMonth || getDefaultMonth();
+    }
+
     function formatNumber(n) {
       const num = Number(n) || 0;
       return num.toLocaleString("id-ID");
     }
 
-    // format waktu singkat
     function formatDate(iso) {
       if (!iso) return "";
       const d = new Date(iso);
@@ -334,22 +383,82 @@
       } else {
         addBtn.classList.add("hidden");
         currentTypeLabel.classList.add("hidden");
-        entriesTitleEl.textContent = "Data tersimpan";
+        entriesTitleEl.textContent = "Ringkasan pengeluaran";
       }
     }
 
+    // ===== RINGKASAN SEMUA PENGELUARAN (ATX/OTX/UJC/CRD) =====
+    async function loadSummary() {
+      const TYPES = ["ATX", "OTX", "UJC", "CRD"];
+      const month = getActiveMonth();
+
+      entriesTitleEl.textContent = "Ringkasan pengeluaran";
+      entriesEl.innerHTML = "<em>Memuat ringkasan...</em>";
+      entriesCountEl.textContent = "";
+
+      let overallTotal = 0;
+      const blocks = [];
+
+      for (const t of TYPES) {
+        try {
+          const res = await fetch(
+            `/list?type=${encodeURIComponent(t)}&month=${encodeURIComponent(month)}`
+          );
+          if (!res.ok) throw new Error("status " + res.status);
+          const data = await res.json();
+          const items = data.items || [];
+
+          let total = 0;
+          for (const item of items) {
+            total += Number(item.harga || 0);
+          }
+
+          overallTotal += total;
+
+          blocks.push(`
+            <div class="entry">
+              <div class="entry-name">${t}</div>
+              <div>Jumlah transaksi: ${items.length}</div>
+              <div>Total: ${formatNumber(total)}</div>
+            </div>
+          `);
+        } catch (err) {
+          blocks.push(`
+            <div class="entry">
+              <div class="entry-name">${t}</div>
+              <div><em>Gagal memuat data: ${err.message}</em></div>
+            </div>
+          `);
+        }
+      }
+
+      blocks.push(`
+        <hr style="margin:8px 0;border:none;border-top:1px solid #eee;">
+        <div class="entry">
+          <div class="entry-name">JUMLAH TOTAL</div>
+          <div>Total pengeluaran: ${formatNumber(overallTotal)}</div>
+        </div>
+      `);
+
+      entriesEl.innerHTML = blocks.join("");
+      entriesCountEl.textContent = "";
+    }
+
+    // ===== LIST DETAIL BERDASARKAN TYPE =====
     async function loadItems() {
       if (!selectedType) {
-        entriesEl.innerHTML = "<em>Pilih jenis pengeluaran di footer.</em>";
-        entriesCountEl.textContent = "";
+        await loadSummary();
         return;
       }
 
+      const month = getActiveMonth();
       entriesEl.innerHTML = "<em>Memuat data...</em>";
       entriesCountEl.textContent = "";
 
       try {
-        const res = await fetch("/list?type=" + encodeURIComponent(selectedType));
+        const res = await fetch(
+          `/list?type=${encodeURIComponent(selectedType)}&month=${encodeURIComponent(month)}`
+        );
         if (!res.ok) throw new Error("Gagal memuat data (" + res.status + ")");
 
         const data = await res.json();
@@ -374,10 +483,18 @@
             <div class="entry-time">${formatDate(item.createdAt)}</div>
           `;
 
+          const actionsHtml = `
+            <button class="btn-small edit" data-id="${item.id}">Edit</button>
+            <button class="btn-small delete" data-id="${item.id}">Hapus</button>
+          `;
+
           div.innerHTML = `
             <div class="entry-top">
               <div class="entry-main">
                 ${mainHtml}
+              </div>
+              <div class="entry-actions">
+                ${actionsHtml}
               </div>
             </div>
           `;
@@ -393,8 +510,7 @@
     // pilih jenis pengeluaran
     typeButtons.forEach(btn => {
       btn.addEventListener("click", async () => {
-        const t = btn.getAttribute("data-type");
-        selectedType = t;
+        selectedType = btn.getAttribute("data-type");
         clearForm();
         form.classList.add("hidden");
         typeInput.value = selectedType;
@@ -410,6 +526,74 @@
       typeInput.value = selectedType;
       form.classList.remove("hidden");
       document.getElementById("keterangan").focus();
+    });
+
+    // klik Edit / Hapus di list
+    entriesEl.addEventListener("click", async (e) => {
+      const btn = e.target;
+      if (!(btn instanceof HTMLElement)) return;
+
+      const id = btn.getAttribute("data-id");
+      if (!id || !selectedType) return;
+
+      // EDIT
+      if (btn.classList.contains("edit")) {
+        try {
+          const month = getActiveMonth();
+          const res = await fetch(
+            `/list?type=${encodeURIComponent(selectedType)}&month=${encodeURIComponent(month)}`
+          );
+          if (!res.ok) throw new Error("Gagal ambil data");
+
+          const data = await res.json();
+          const items = data.items || [];
+          const item = items.find(x => x.id === id);
+          if (!item) {
+            alert("Data tidak ditemukan");
+            return;
+          }
+
+          editingIdInput.value = item.id;
+          typeInput.value = item.type;
+          document.getElementById("keterangan").value = item.keterangan || "";
+          document.getElementById("harga").value = item.harga ?? "";
+
+          form.classList.remove("hidden");
+          statusEl.textContent = "Mode edit data " + item.type;
+        } catch (err) {
+          alert("Gagal memuat data untuk edit: " + err.message);
+        }
+      }
+
+      // HAPUS
+      if (btn.classList.contains("delete")) {
+        if (!confirm("Yakin ingin menghapus data ini?")) return;
+
+        try {
+          const res = await fetch("/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, type: selectedType }),
+          });
+          if (!res.ok) {
+            const txt = await res.text();
+            throw new Error(txt || "Gagal hapus");
+          }
+          await loadItems();
+        } catch (err) {
+          alert("Gagal menghapus: " + err.message);
+        }
+      }
+    });
+
+    // perubahan bulan
+    monthInput.addEventListener("change", async () => {
+      currentMonth = monthInput.value || null;
+      if (selectedType) {
+        await loadItems();
+      } else {
+        await loadSummary();
+      }
     });
 
     // submit form
@@ -429,17 +613,25 @@
         return;
       }
 
+      const editingId = editingIdInput.value || null;
+
       const payload = {
         type: selectedType,
         keterangan,
         harga
       };
 
+      let endpoint = "/submit";
+      if (editingId) {
+        endpoint = "/update";
+        payload.id = editingId;
+      }
+
       statusEl.textContent = "Menyimpan...";
       submitBtn.disabled = true;
 
       try {
-        const res = await fetch("/submit", {
+        const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -463,9 +655,13 @@
     });
 
     // init
-    (function init() {
+    (async function init() {
+      const def = getDefaultMonth();
+      currentMonth = def;
+      monthInput.value = def;
+
       updateFooterUI();
-      entriesEl.innerHTML = "<em>Pilih jenis pengeluaran di footer.</em>";
+      await loadSummary();
     })();
   </script>
 </body>
