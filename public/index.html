@@ -109,7 +109,7 @@
       margin-bottom: 4px;
     }
     .entries-list {
-      max-height: 260px;
+      max-height: 220px;
       overflow-y: auto;
     }
     .entry {
@@ -255,7 +255,18 @@
 
         <div id="current-type" class="current-type-label hidden"></div>
 
-        <!-- FORM INPUT (disembunyikan sampai + / Edit ditekan) -->
+        <!-- LIST DATA (DI ATAS) -->
+        <div class="entries">
+          <div class="entries-header">
+            <span id="entries-title">Data tersimpan</span>
+            <small id="entries-count"></small>
+          </div>
+          <div id="entries" class="entries-list">
+            <em>Pilih jenis penjualan di footer.</em>
+          </div>
+        </div>
+
+        <!-- FORM INPUT (DI BAWAH LIST, HIDDEN AWALNYA) -->
         <form id="data-form" class="hidden">
           <input type="hidden" id="type" name="type" />
           <input type="hidden" id="editingId" name="editingId" />
@@ -347,17 +358,6 @@
           <button type="submit" id="submitBtn">Simpan</button>
           <div id="status"></div>
         </form>
-
-        <!-- LIST DATA -->
-        <div class="entries">
-          <div class="entries-header">
-            <span id="entries-title">Data tersimpan</span>
-            <small id="entries-count"></small>
-          </div>
-          <div id="entries" class="entries-list">
-            <em>Pilih jenis penjualan di footer.</em>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -399,7 +399,6 @@
       statusEl.textContent = "";
     }
 
-    // Atur layout form berdasarkan jenis (REG/OPR/VPN vs AXB)
     function configureFormSections() {
       if (!selectedType) return;
       typeInput.value = selectedType;
@@ -515,26 +514,25 @@
       }
     }
 
-    // Klik jenis penjualan di footer:
-    // tampilkan data + tombol + (form tetap disembunyikan)
+    // Pilih jenis penjualan -> tampilkan data saja, form tetap hidden
     typeButtons.forEach(btn => {
       btn.addEventListener("click", async () => {
         const t = btn.getAttribute("data-type");
         selectedType = t;
         clearForm();
-        form.classList.add("hidden");   // form disembunyikan
+        form.classList.add("hidden");
         configureFormSections();
         updateFooterUI();
         await loadItems();
       });
     });
 
-    // Tombol + -> buka form (mode tambah)
+    // Tombol + -> buka form (mode tambah) di bawah list
     addBtn.addEventListener("click", () => {
       if (!selectedType) return;
       clearForm();
       configureFormSections();
-      form.classList.remove("hidden");  // form baru muncul di sini
+      form.classList.remove("hidden");
 
       if (selectedType === "AXB") {
         document.getElementById("namaPengelola").focus();
@@ -543,7 +541,7 @@
       }
     });
 
-    // Klik Edit / Hapus pada list
+    // Klik Edit / Hapus
     entriesEl.addEventListener("click", async (e) => {
       const btn = e.target;
       if (!(btn instanceof HTMLElement)) return;
@@ -591,7 +589,7 @@
             document.getElementById("hargaA5").value = item.hargaA5 ?? "";
           }
 
-          form.classList.remove("hidden"); // form muncul di mode edit
+          form.classList.remove("hidden");
           statusEl.textContent = "Mode edit data " + item.type + " (ID: " + item.id + ")";
         } catch (err) {
           alert("Gagal memuat data untuk edit: " + err.message);
@@ -674,15 +672,12 @@
           throw new Error(text || "Server error");
         }
 
-        const data = await res.json().catch(() => ({}));
+        await res.json().catch(() => ({}));
 
-        if (editingId) {
-          statusEl.textContent = "Data berhasil diupdate.";
-        } else {
-          statusEl.textContent = "Tersimpan! ID: " + (data.id || "");
-        }
-
+        // Setelah sukses: sembunyikan form & refresh list
         editingIdInput.value = "";
+        form.classList.add("hidden");
+        clearForm();
         await loadItems();
       } catch (err) {
         statusEl.textContent = "Gagal menyimpan: " + err.message;
